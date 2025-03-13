@@ -101,8 +101,8 @@ Je nach Testkonfiguration werden unterschiedliche Thread-Modelle Vorteile zeigen
 1. Sicherstellen, dass mindestens Java 17 installiert ist (Java 21 für echte Virtual Threads)
 2. Projekt starten: `mvn spring-boot:run`
 3. Im Browser öffnen:
-   - Hauptseite: http://localhost:8080/
-   - Thread-Monitor: http://localhost:8080/thread-monitor.html
+   - Hauptseite: http://localhost:8081/
+   - Thread-Monitor: http://localhost:8081/thread-monitor.html
 
 ## Bildungsaspekte
 
