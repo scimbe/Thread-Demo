@@ -269,6 +269,8 @@
             .then(response => response.text())
             .then(data => {
                 document.getElementById('infoBoxContainer').innerHTML = data;
+                // Initialisierung der InfoBox-Funktionalität nach dem Laden des Inhalts
+                initializeInfoBox();
             })
             .catch(error => {
                 console.error('Error loading infobox:', error);
