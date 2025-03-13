@@ -54,6 +54,10 @@ public class MatrixCalculationService {
      * Prüft, ob eine Zahl eine Primzahl ist
      */
     private boolean isPrime(long number) {
+        return calculate(number);
+    }
+
+    public static boolean calculate(long number) {
         if (number <= 1) {
             return false;
         }
@@ -64,6 +68,7 @@ public class MatrixCalculationService {
         }
         return true;
     }
+
     /**
      * Erstellt eine zufällige Matrix mit der angegebenen Größe
      */
