@@ -3,7 +3,8 @@
  * Funktionalität für die ausblendbare Info-Box mit Thread-Konzepten und Experimentvorschlägen
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+// Diese Funktion wird aufgerufen, wenn die Info-Box geladen wurde
+function initializeInfoBox() {
     // Toggle-Funktionalität für die Info-Box hinzufügen
     const toggleInfoButton = document.getElementById('toggleInfoButton');
     if (toggleInfoButton) {
@@ -18,5 +19,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.textContent = 'Ausblenden';
             }
         });
+    }
+}
+
+// Ursprünglicher Event-Listener für den Fall, dass die InfoBox direkt im HTML enthalten ist
+document.addEventListener('DOMContentLoaded', function() {
+    // Wenn die Info-Box direkt im HTML ist (nicht per fetch geladen)
+    const toggleInfoButton = document.getElementById('toggleInfoButton');
+    if (toggleInfoButton) {
+        initializeInfoBox();
     }
 });
