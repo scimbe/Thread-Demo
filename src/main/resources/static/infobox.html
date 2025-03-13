@@ -1,0 +1,190 @@
+<!-- Info-Box mit Thread-Konzepten und Experimentvorschlägen -->
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Projektinformationen und Experimentvorschläge</h5>
+        <button class="btn btn-sm btn-light" id="toggleInfoButton">Anzeigen</button>
+    </div>
+    <div id="infoBox" class="card-body">
+        <!-- Thread-Konzepte -->
+        <div class="info-section">
+            <h4>Thread-Konzepte im Überblick</h4>
+            <p>Diese Anwendung vergleicht verschiedene Thread-Implementierungen mit präziser Terminologie:</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3 thread-model-platform">
+                        <div class="card-body">
+                            <h5>Platform Threads (1:1 Mapping)</h5>
+                            <p>Standard Java-Threads mit direktem Mapping zu OS-Threads. Jeder Thread benötigt eigenen Stack und Ressourcen. 
+                            Bieten volle CPU-Nutzung, sind aber in der Skalierung begrenzt.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3 thread-model-virtual">
+                        <div class="card-body">
+                            <h5>Virtual Threads (Java 21+)</h5>
+                            <p>Neue leichtgewichtige JVM-verwaltete Threads, die auf wenige Platform-Threads gemappt werden.
+                            Extrem skalierbar und ressourceneffizient, besonders bei I/O-intensiven Aufgaben.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3 thread-model-limited">
+                        <div class="card-body">
+                            <h5>Begrenzte Threads</h5>
+                            <p>Simulation einer stark ressourcenbegrenzten Umgebung.
+                            Zeigt Verhalten bei Thread-Knappheit. Auf CPU-Kernanzahl limitiert.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3 thread-model-optimized">
+                        <div class="card-body">
+                            <h5>Optimierte Threads (Work-Stealing)</h5>
+                            <p>Verwendet ForkJoinPool mit Work-Stealing für bessere Lastverteilung. 
+                            Threads können Arbeit von überlasteten Threads "stehlen".</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Experimentvorschläge -->
+        <div class="info-section">
+            <h4>Empfohlene Experimente</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3 experiment-card">
+                        <div class="card-header bg-info text-white">
+                            Experiment 1: I/O-Skalierbarkeit
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Ziel:</strong> Unterschiedliches Verhalten der Thread-Modelle bei I/O-Last zeigen</p>
+                            <p><strong>Durchführung:</strong></p>
+                            <ol>
+                                <li>Wähle "I/O-intensiver Test"</li>
+                                <li>Setze parallele Aufgaben auf 50</li>
+                                <li>Vergleiche alle Thread-Modelle</li>
+                            </ol>
+                            <p><strong>Erwartete Ergebnisse:</strong> Virtual Threads sollten deutlich besser abschneiden als Platform Threads und begrenzte Threads, da sie bei blockierenden I/O-Operationen effizient pausiert werden.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3 experiment-card">
+                        <div class="card-header bg-success text-white">
+                            Experiment 2: CPU-Last mit wenigen Threads
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Ziel:</strong> Vergleich bei geringer CPU-Last</p>
+                            <p><strong>Durchführung:</strong></p>
+                            <ol>
+                                <li>Wähle "CPU-intensiver Test"</li>
+                                <li>Setze Matrix-Größe auf 200x200</li>
+                                <li>Setze parallele Aufgaben auf 8</li>
+                                <li>Vergleiche alle Thread-Modelle</li>
+                            </ol>
+                            <p><strong>Erwartete Ergebnisse:</strong> Alle Modelle sollten ähnlich abschneiden, möglicherweise leichte Vorteile für Platform Threads und optimierte Threads bei rechenintensiven Aufgaben.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3 experiment-card">
+                        <div class="card-header bg-warning text-dark">
+                            Experiment 3: Speichereffizienz
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Ziel:</strong> Unterschiede im Speicherverbrauch zeigen</p>
+                            <p><strong>Durchführung:</strong></p>
+                            <ol>
+                                <li>Wähle beliebigen Test-Typ</li>
+                                <li>Setze parallele Aufgaben auf 100</li>
+                                <li>Vergleiche Platform Threads mit Virtual Threads</li>
+                            </ol>
+                            <p><strong>Erwartete Ergebnisse:</strong> Virtual Threads sollten deutlich weniger Speicher verbrauchen, besonders in Java 21+, da sie keinen eigenen Stack benötigen.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3 experiment-card">
+                        <div class="card-header bg-danger text-white">
+                            Experiment 4: Thread-Knappheit
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Ziel:</strong> Auswirkungen von Thread-Begrenzungen zeigen</p>
+                            <p><strong>Durchführung:</strong></p>
+                            <ol>
+                                <li>Wähle "I/O-intensiver Test"</li>
+                                <li>Setze parallele Aufgaben auf 20</li>
+                                <li>Vergleiche Begrenzte Threads mit Virtual Threads</li>
+                            </ol>
+                            <p><strong>Erwartete Ergebnisse:</strong> Begrenzte Threads sollten deutlich langsamer sein, da sie auf die CPU-Kernanzahl limitiert sind und Aufgaben sequentiell abarbeiten müssen.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Erwartungshaltung -->
+        <div class="info-section">
+            <h4>Erwartungshaltung bei verschiedenen Szenarien</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Szenario</th>
+                            <th>Platform Threads</th>
+                            <th>Virtual Threads</th>
+                            <th>Begrenzte Threads</th>
+                            <th>Optimierte Threads</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Wenige CPU-intensive Aufgaben</td>
+                            <td>Gut (direkte CPU-Nutzung)</td>
+                            <td>Gut (in Java 21+)</td>
+                            <td>Gut (wenn Aufgabenzahl ≤ CPU-Kerne)</td>
+                            <td>Sehr gut (effizientes Scheduling)</td>
+                        </tr>
+                        <tr>
+                            <td>Viele CPU-intensive Aufgaben</td>
+                            <td>Begrenzt durch Pool-Größe</td>
+                            <td>Gut, aber mehr Context-Switching</td>
+                            <td>Schlecht (Warteschlange)</td>
+                            <td>Gut (Work-Stealing)</td>
+                        </tr>
+                        <tr>
+                            <td>Wenige I/O-intensive Aufgaben</td>
+                            <td>Gut</td>
+                            <td>Sehr gut</td>
+                            <td>Gut</td>
+                            <td>Gut</td>
+                        </tr>
+                        <tr>
+                            <td>Viele I/O-intensive Aufgaben</td>
+                            <td>Begrenzt (blockierte Threads)</td>
+                            <td>Hervorragend (optimiert für I/O)</td>
+                            <td>Sehr schlecht (Ressourcenmangel)</td>
+                            <td>Gut, aber nicht optimal für I/O</td>
+                        </tr>
+                        <tr>
+                            <td>Speichereffizienz</td>
+                            <td>Schlecht (hoher Overhead)</td>
+                            <td>Hervorragend (geringer Overhead)</td>
+                            <td>Mittel (begrenzte Anzahl)</td>
+                            <td>Mittel</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Java-Version -->
+        <div class="alert alert-info">
+            <h5>Hinweis zur Java-Version</h5>
+            <p>Für optimale Ergebnisse mit Virtual Threads wird <strong>Java 21 oder höher</strong> empfohlen. In älteren Java-Versionen werden Virtual Threads simuliert, was nicht die volle Leistungsfähigkeit zeigt.</p>
+            <p>Der Hauptvorteil von echten Virtual Threads (Java 21+) zeigt sich besonders bei I/O-intensiven Anwendungen und bei sehr vielen parallelen Aufgaben.</p>
+        </div>
+    </div>
+</div>

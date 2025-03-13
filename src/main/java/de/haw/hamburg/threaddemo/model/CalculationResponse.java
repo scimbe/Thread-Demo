@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 /**
- * DTO für die Antwort der Matrix-Multiplikation
+ * DTO für die Antwort der Thread-Tests
  */
 @Data
 @Builder
@@ -15,9 +15,19 @@ public class CalculationResponse {
     private String threadModel;
     
     /**
-     * Größe der Matrizen
+     * Art des Tests: "cpu" für Matrix-Multiplikation, "io" für I/O-intensive Tests
+     */
+    private String testType;
+    
+    /**
+     * Größe der Matrizen (für CPU-Tests)
      */
     private int matrixSize;
+    
+    /**
+     * Dateigröße in KB (für I/O-Tests)
+     */
+    private int fileSizeKB;
     
     /**
      * Anzahl parallel ausgeführter Aufgaben
@@ -30,9 +40,31 @@ public class CalculationResponse {
     private long totalExecutionTimeMs;
     
     /**
+     * Speichernutzung vor dem Test (MB)
+     */
+    private double memoryBeforeMB;
+    
+    /**
+     * Speichernutzung während des Tests (Peak) (MB)
+     */
+    private double memoryPeakMB;
+    
+    /**
+     * Speichernutzung nach dem Test (MB)
+     */
+    private double memoryAfterMB;
+    
+    /**
      * Durchschnittliche Zeit pro Aufgabe
      */
     public double getAverageTimePerTask() {
         return (double) totalExecutionTimeMs / parallelTasks;
+    }
+    
+    /**
+     * Speicherverbrauch während des Tests (MB)
+     */
+    public double getMemoryUsageMB() {
+        return memoryPeakMB - memoryBeforeMB;
     }
 }

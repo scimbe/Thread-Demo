@@ -1,0 +1,48 @@
+/**
+ * Thread-Demo Info-Box Styles
+ * CSS für die ausblendbare Info-Box mit Thread-Konzepten und Experimentvorschlägen
+ */
+
+/* Styling für Info-Box */
+#infoBox {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-out;
+}
+
+#infoBox.show {
+    max-height: 2000px;
+    transition: max-height 0.5s ease-in;
+}
+
+.info-section {
+    border-left: 4px solid #0d6efd;
+    padding-left: 15px;
+    margin-bottom: 15px;
+}
+
+.experiment-card {
+    transition: all 0.3s ease;
+}
+
+.experiment-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Thread-Modell-Farben für die Info-Box */
+.thread-model-platform {
+    background-color: #d1e7dd;
+}
+
+.thread-model-virtual {
+    background-color: #cfe2ff;
+}
+
+.thread-model-limited {
+    background-color: #fff3cd;
+}
+
+.thread-model-optimized {
+    background-color: #f8d7da;
+}

@@ -12,6 +12,14 @@ import java.util.concurrent.Executors;
 
 /**
  * Konfigurationsklasse für die verschiedenen Thread-Modelle
+ * 
+ * Diese Klasse definiert vier verschiedene Thread-Implementierungen, wobei eine klare
+ * Unterscheidung zwischen JVM-Konzepten und Betriebssystemkonzepten gemacht wird:
+ * 
+ * 1. Platform Threads: JVM-Threads mit 1:1-Mapping zu Betriebssystem-Threads
+ * 2. Virtual Threads: Leichtgewichtige, von der JVM verwaltete Threads (ab Java 21)
+ * 3. Begrenzte Threads: Simulation der Ressourcenbeschränkungen ähnlich wie bei OS-Kernel-Threads
+ * 4. Optimierte Threads: Work-Stealing-Pool für optimiertes Scheduling ähnlich zu User-Space-Threading
  */
 @Configuration
 public class ThreadConfig {
@@ -19,7 +27,10 @@ public class ThreadConfig {
     private static final Logger logger = LoggerFactory.getLogger(ThreadConfig.class);
 
     /**
-     * Standard Java Thread-Pool mit fester Größe (Platform Threads)
+     * Standard Java Platform Thread-Pool mit fester Größe
+     * - 1:1-Mapping zu Betriebssystem-Threads
+     * - Schwere Threads mit eigenem Stack im Speicher
+     * - Feste Poolgröße beschränkt die maximale Parallelität
      */
     @Bean(name = "platformThreadTaskExecutor")
     public Executor platformThreadTaskExecutor() {
@@ -33,8 +44,12 @@ public class ThreadConfig {
     }
 
     /**
-     * Virtueller Thread-Pool - verwendet echte Virtual Threads in Java 21+, 
+     * Virtual Thread Executor - verwendet echte Virtual Threads in Java 21+, 
      * sonst einen simulierten unbegrenzten Pool
+     * - Sehr leichtgewichtige Threads (nur in Java 21+)
+     * - Carrier-Thread-Multiplexing (in Java 21+)
+     * - Optimiert für blockierende Operationen
+     * - Millionen von Threads möglich
      */
     @Bean(name = "virtualThreadTaskExecutor")
     public Executor virtualThreadTaskExecutor() {
@@ -46,22 +61,26 @@ public class ThreadConfig {
             try {
                 // Reflection, um Java 21 Features ohne direkten Import zu nutzen
                 // Das verhindert Kompilierungsfehler in älteren Java-Versionen
+                logger.info("Java 21+ erkannt: Verwende echte Virtual Threads");
                 Class<?> executorsClass = Class.forName("java.util.concurrent.Executors");
                 return (Executor) executorsClass.getMethod("newVirtualThreadPerTaskExecutor").invoke(null);
             } catch (Exception e) {
                 logger.warn("Konnte keine echten Virtual Threads erstellen, obwohl Java 21+: {}", e.getMessage());
-                logger.warn("Verwende stattdessen einen unbegrenzten Thread-Pool...");
+                logger.warn("Verwende stattdessen einen unbegrenzten Platform Thread-Pool zur Simulation...");
                 return createSimulatedVirtualThreadPool();
             }
         } else {
             // Java < 21: Simulierten Virtual Thread-Pool verwenden
-            logger.info("Java < 21 erkannt, verwende simulierten Virtual Thread-Pool");
+            logger.info("Java < 21 erkannt: Verwende simulierten Virtual Thread-Pool");
             return createSimulatedVirtualThreadPool();
         }
     }
     
     /**
      * Erstellt einen simulierten Virtual Thread-Pool (für Java < 21)
+     * - Verwendet einen CachedThreadPool für dynamische Skalierung
+     * - Echte Virtual Threads würden weniger Ressourcen verbrauchen
+     * - Diese Simulation hat immer noch 1:1-Mapping zu OS-Threads
      */
     private Executor createSimulatedVirtualThreadPool() {
         return Executors.newCachedThreadPool(r -> {
@@ -72,27 +91,43 @@ public class ThreadConfig {
     }
 
     /**
-     * Kleiner Thread-Pool für Kernel-Thread Simulation
-     * In Java gibt es keine direkten Kernel-Threads, aber wir können einen
-     * sehr kleinen Pool verwenden, um das Verhalten zu simulieren
+     * Stark begrenzter Thread-Pool zur Simulation von Ressourcenbeschränkungen
+     * 
+     * HINWEIS: Dies simuliert nur die Ressourcenbeschränkung ähnlich zu Kernel-Threads,
+     * ist aber technisch gesehen ein Pool aus Platform-Threads. In Java/JVM gibt es keine
+     * direkten "Kernel-Threads" - alle Threads sind letztendlich OS-Threads.
+     * 
+     * - Begrenzt auf die Anzahl der CPU-Kerne
+     * - Zeigt Verhalten bei starker Thread-Limitierung
      */
-    @Bean(name = "kernelThreadTaskExecutor")
-    public Executor kernelThreadTaskExecutor() {
+    @Bean(name = "limitedThreadTaskExecutor")
+    public Executor limitedThreadTaskExecutor() {
         int coreCount = Runtime.getRuntime().availableProcessors();
-        return Executors.newFixedThreadPool(coreCount);
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(coreCount);
+        executor.setMaxPoolSize(coreCount);
+        executor.setQueueCapacity(500); // Größere Queue für Tasks
+        executor.setThreadNamePrefix("limited-thread-");
+        executor.initialize();
+        logger.info("Begrenzter Thread-Pool erstellt mit {} Threads", coreCount);
+        return executor;
     }
 
     /**
-     * Thread-Pool mit vielen Threads für User-Thread Simulation
+     * Optimierter Work-Stealing-Pool für effizientes Task-Scheduling
+     * 
+     * HINWEIS: Dies simuliert optimiertes Threading ähnlich zu User-Space-Threading-Ansätzen,
+     * verwendet aber immer noch Platform-Threads (keine echten "User-Threads" im traditionellen Sinne).
+     * 
+     * - Verwendet einen ForkJoinPool mit Work-Stealing-Algorithmus
+     * - Threads können Arbeit von überlasteten Threads "stehlen"
+     * - Bessere Lastverteilung bei ungleichmäßigen Aufgaben
      */
-
-    //    1. Work-Stealing-Mechanismus ahmt das Verhalten vieler User-Threads nach
-	//        •	Jeder User-Thread in einem System führt in der Regel unterschiedliche Aufgaben aus, die nicht immer gleichmäßig verteilt sind.
-    //        •	Der Work-Stealing-Pool sorgt dafür, dass Threads, die nichts zu tun haben, aktive Aufgaben von anderen Threads übernehmen können.
-     //       •	Dadurch werden CPU-Kerne optimal ausgelastet, ähnlich wie es in einem System mit vielen User-Threads der Fall wäre.
-    @Bean(name = "userThreadTaskExecutor")
-    public Executor userThreadTaskExecutor() {
-        return Executors.newWorkStealingPool(50);
+    @Bean(name = "optimizedThreadTaskExecutor")
+    public Executor optimizedThreadTaskExecutor() {
+        int parallelism = Math.max(4, Runtime.getRuntime().availableProcessors() * 2);
+        logger.info("Optimierter Thread-Pool erstellt mit Parallelitätsgrad {}", parallelism);
+        return Executors.newWorkStealingPool(parallelism);
     }
     
     /**
