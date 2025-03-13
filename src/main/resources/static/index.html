@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thread-Modell-Vergleich</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .result-card {
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .thread-model-platform {
+            background-color: #d1e7dd;
+        }
+        
+        .thread-model-virtual {
+            background-color: #cfe2ff;
+        }
+        
+        .thread-model-kernel {
+            background-color: #fff3cd;
+        }
+        
+        .thread-model-user {
+            background-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Thread-Modell-Vergleich für REST-Anfragen powered by Cads</h1>
+        <h3 class="text-center mb-4">(c) 2025 Martin Becke)</h3>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Benchmark-Konfiguration</h5>
+                        <form id="benchmarkForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="matrixSize" class="form-label">Matrixgröße:</label>
+                                    <input type="range" class="form-range" id="matrixSize" min="100" max="1000" step="50" value="200">
+                                    <div class="text-center" id="matrixSizeValue">200 x 200</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="parallelTasks" class="form-label">Parallele Aufgaben:</label>
+                                    <input type="range" class="form-range" id="parallelTasks" min="1" max="100" step="1" value="10">
+                                    <div class="text-center" id="parallelTasksValue">10</div>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="button" id="runAllBtn" class="btn btn-primary">Alle Thread-Modelle vergleichen</button>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <button type="button" id="runPlatformBtn" class="btn btn-success w-100">Platform Threads</button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" id="runVirtualBtn" class="btn btn-info w-100">Virtual Threads</button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" id="runKernelBtn" class="btn btn-warning w-100">Kernel Threads</button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" id="runUserBtn" class="btn btn-danger w-100">User Threads</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="heavyLoadSwitch">
+            <label class="form-check-label" for="heavyLoadSwitch">Zusätzliche Belastung aktivieren</label>
+        </div>
+
+
+        <!-- Grafischer Vergleich -->
+        <div class="row mt-4 mb-5" id="chartContainer" style="display: none;">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Grafischer Vergleich</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <canvas id="timeChart"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <canvas id="tasksPerSecondChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ergebnisbereich -->
+        <div class="row" id="resultsContainer">
+            <!-- Wird durch JavaScript gefüllt -->
+        </div>
+
+        
+        <!-- Thread-Modell-Erklärungen -->
+        <div class="row mb-5">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">Erklärung der Thread-Modelle</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3 thread-model-platform">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Platform Threads</h5>
+                                        <p class="card-text">
+                                            <strong>Eigenschaften:</strong> 1:1 Mapping zu Betriebssystem-Threads, schwer, hoher Speicherverbrauch<br>
+                                            <strong>Vorteile:</strong> Volle Nutzung von Multi-Core-CPUs, direkte Systemcalls<br>
+                                            <strong>Nachteile:</strong> Teuer zu erstellen, begrenzte Skalierbarkeit (~wenige Tausend)
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="card thread-model-kernel">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Kernel Threads</h5>
+                                        <p class="card-text">
+                                            <strong>Eigenschaften:</strong> Vom Betriebssystem verwaltet, im Kernel-Space<br>
+                                            <strong>Vorteile:</strong> Präemptiv, können direkt vom Prozessor eingeplant werden<br>
+                                            <strong>Nachteile:</strong> Teurer Kontext-Wechsel, begrenzte Anzahl durch Systemressourcen
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3 thread-model-virtual">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Virtual Threads (Java 21)</h5>
+                                        <p class="card-text">
+                                            <strong>Eigenschaften:</strong> Leichtgewichtig, von der JVM verwaltet, multiplexed auf Platform-Threads<br>
+                                            <strong>Vorteile:</strong> Millionen möglich, geringer Overhead, optimiert für I/O-Operationen<br>
+                                            <strong>Nachteile:</strong> Nicht für CPU-intensive Aufgaben optimiert, die einen Thread blockieren
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="card thread-model-user">
+                                    <div class="card-body">
+                                        <h5 class="card-title">User Threads</h5>
+                                        <p class="card-text">
+                                            <strong>Eigenschaften:</strong> Im User-Space verwaltet, N:M Mapping zu Kernel-Threads<br>
+                                            <strong>Vorteile:</strong> Effizientes Thread-Management, hohe Anzahl möglich<br>
+                                            <strong>Nachteile:</strong> Blockierende Operationen können alle Threads blockieren, kooperatives Multitasking
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // UI-Updates
+        document.getElementById('matrixSize').addEventListener('input', function() {
+            document.getElementById('matrixSizeValue').textContent = this.value + ' x ' + this.value;
+        });
+        
+        document.getElementById('parallelTasks').addEventListener('input', function() {
+            document.getElementById('parallelTasksValue').textContent = this.value;
+        });
+        
+        // Test-Funktionen
+        document.getElementById('runAllBtn').addEventListener('click', function() {
+            runTest('compare-all');
+        });
+        
+        document.getElementById('runPlatformBtn').addEventListener('click', function() {
+            runTest('platform-threads');
+        });
+        
+        document.getElementById('runVirtualBtn').addEventListener('click', function() {
+            runTest('virtual-threads');
+        });
+        
+        document.getElementById('runKernelBtn').addEventListener('click', function() {
+            runTest('kernel-threads');
+        });
+
+        document.getElementById("heavyLoadSwitch").addEventListener("change", (event) => {
+            const isChecked = event.target.checked;
+            const url = isChecked ? "/api/system/heavy-load/start" : "/api/system/heavy-load/stop";
+
+            fetch(url, { method: 'POST' })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                })
+                .catch(err => console.error('Error:', err));
+        });
+
+
+        document.getElementById('runUserBtn').addEventListener('click', function() {
+            runTest('user-threads');
+        });
+        
+        // Globale Variablen für die Diagramme
+        let timeChart = null;
+        let tasksPerSecondChart = null;
+        let testResults = [];
+        
+        // Funktion zum Ausführen der Tests
+        function runTest(endpoint) {
+            const matrixSize = document.getElementById('matrixSize').value;
+            const parallelTasks = document.getElementById('parallelTasks').value;
+            
+            // Anfragedaten
+            const requestData = {
+                matrixSize: parseInt(matrixSize),
+                parallelTasks: parseInt(parallelTasks)
+            };
+            
+            // Anzeige
+            let resultId = Date.now().toString();
+            let resultCard = createResultCard(resultId, endpoint, requestData);
+            document.getElementById('resultsContainer').prepend(resultCard);
+            
+            // API-Anfrage
+            fetch(`/api/matrix/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateResultCard(resultId, data);
+                
+                // Füge Ergebnisse für Diagramm hinzu
+                if (Array.isArray(data)) {
+                    testResults = data;
+                } else {
+                    testResults = [data];
+                }
+                
+                updateCharts();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById(resultId).querySelector('.loading').style.display = 'none';
+                document.getElementById(resultId).querySelector('.card-body').innerHTML += `
+                    <div class="alert alert-danger mt-3">
+                        Fehler bei der Anfrage: ${error.message}
+                    </div>
+                `;
+            });
+        }
+        
+        // Erstellt eine Ergebniskarte mit Ladeanzeige
+        function createResultCard(id, endpoint, requestData) {
+            let title = "";
+            let cardClass = "";
+            
+            switch(endpoint) {
+                case 'platform-threads':
+                    title = "Platform Threads";
+                    cardClass = "thread-model-platform";
+                    break;
+                case 'virtual-threads':
+                    title = "Virtual Threads";
+                    cardClass = "thread-model-virtual";
+                    break;
+                case 'kernel-threads':
+                    title = "Kernel Threads";
+                    cardClass = "thread-model-kernel";
+                    break;
+                case 'user-threads':
+                    title = "User Threads";
+                    cardClass = "thread-model-user";
+                    break;
+                case 'compare-all':
+                    title = "Vergleich aller Thread-Modelle";
+                    cardClass = "";
+                    break;
+            }
+            
+            const card = document.createElement('div');
+            card.className = 'col-md-' + (endpoint === 'compare-all' ? '12' : '6');
+            card.innerHTML = `
+                <div id="${id}" class="card result-card ${cardClass}">
+                    <div class="card-header">
+                        <h5 class="mb-0">${title}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Matrix: ${requestData.matrixSize} x ${requestData.matrixSize}</p>
+                        <p>Parallele Aufgaben: ${requestData.parallelTasks}</p>
+                        <div class="text-center">
+                            <div class="loading"></div>
+                            <p class="mt-2">Test läuft...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Aktualisiert eine Ergebniskarte mit den Testergebnissen
+        function updateResultCard(id, data) {
+            const card = document.getElementById(id);
+            if (!card) return;
+            
+            card.querySelector('.loading').style.display = 'none';
+            
+            const cardBody = card.querySelector('.card-body');
+            if (Array.isArray(data)) {
+                // Vergleich aller Thread-Modelle
+                let resultsHtml = '<div class="table-responsive"><table class="table table-striped">';
+                resultsHtml += '<thead><tr><th>Thread-Modell</th><th>Ausführungszeit (ms)</th><th>Aufgaben/Sekunde</th></tr></thead>';
+                resultsHtml += '<tbody>';
+                
+                data.forEach(result => {
+                    const tasksPerSecond = (result.parallelTasks / (result.totalExecutionTimeMs / 1000)).toFixed(2);
+                    resultsHtml += `
+                        <tr>
+                            <td>${result.threadModel}</td>
+                            <td>${result.totalExecutionTimeMs}</td>
+                            <td>${tasksPerSecond}</td>
+                        </tr>
+                    `;
+                });
+                
+                resultsHtml += '</tbody></table></div>';
+                cardBody.innerHTML = resultsHtml;
+            } else {
+                // Einzelnes Thread-Modell
+                const tasksPerSecond = (data.parallelTasks / (data.totalExecutionTimeMs / 1000)).toFixed(2);
+                cardBody.innerHTML = `
+                    <h5>Ergebnisse:</h5>
+                    <p><strong>Thread-Modell:</strong> ${data.threadModel}</p>
+                    <p><strong>Matrix:</strong> ${data.matrixSize} x ${data.matrixSize}</p>
+                    <p><strong>Parallele Aufgaben:</strong> ${data.parallelTasks}</p>
+                    <p><strong>Gesamtausführungszeit:</strong> ${data.totalExecutionTimeMs} ms</p>
+                    <p><strong>Durchschnittliche Zeit pro Aufgabe:</strong> ${(data.totalExecutionTimeMs / data.parallelTasks).toFixed(2)} ms</p>
+                    <p><strong>Aufgaben pro Sekunde:</strong> ${tasksPerSecond}</p>
+                `;
+            }
+        }
+        
+        // Aktualisiert die Diagramme mit den aktuellen Testergebnissen
+        function updateCharts() {
+            if (testResults.length === 0) return;
+            
+            document.getElementById('chartContainer').style.display = 'block';
+            
+            const labels = testResults.map(result => result.threadModel);
+            const executionTimes = testResults.map(result => result.totalExecutionTimeMs);
+            const tasksPerSecond = testResults.map(result => 
+                (result.parallelTasks / (result.totalExecutionTimeMs / 1000)).toFixed(2)
+            );
+            
+            // Farben für die verschiedenen Thread-Modelle
+            const backgroundColors = testResults.map(result => {
+                if (result.threadModel.includes("Platform")) return 'rgba(40, 167, 69, 0.6)';
+                if (result.threadModel.includes("Virtual")) return 'rgba(0, 123, 255, 0.6)';
+                if (result.threadModel.includes("Kernel")) return 'rgba(255, 193, 7, 0.6)';
+                if (result.threadModel.includes("User")) return 'rgba(220, 53, 69, 0.6)';
+                return 'rgba(108, 117, 125, 0.6)';
+            });
+            
+            // Ausführungszeit-Diagramm
+            const timeCtx = document.getElementById('timeChart').getContext('2d');
+            if (timeChart) timeChart.destroy();
+            
+            timeChart = new Chart(timeCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ausführungszeit (ms)',
+                        data: executionTimes,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Zeit in Millisekunden (niedriger ist besser)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Gesamtausführungszeit'
+                        }
+                    }
+                }
+            });
+            
+            // Aufgaben pro Sekunde Diagramm
+            const tasksCtx = document.getElementById('tasksPerSecondChart').getContext('2d');
+            if (tasksPerSecondChart) tasksPerSecondChart.destroy();
+            
+            tasksPerSecondChart = new Chart(tasksCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Aufgaben pro Sekunde',
+                        data: tasksPerSecond,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Aufgaben pro Sekunde (höher ist besser)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Durchsatz (Aufgaben pro Sekunde)'
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
