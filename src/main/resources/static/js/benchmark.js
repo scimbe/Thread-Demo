@@ -75,6 +75,16 @@ let tasksPerSecondChart = null;
 let memoryChart = null;
 let testResults = [];
 
+// Thread-Modell-Bezeichnungen für konsistente Darstellung
+const threadModelLabels = {
+    'platform-threads': 'Platform Threads',
+    'virtual-threads': 'Virtual Threads',
+    'limited-threads': 'Begrenzte Threads',
+    'optimized-threads': 'Optimierte Threads',
+    'kernel-threads': 'Begrenzte Threads',  // Abwärtskompatibilität
+    'user-threads': 'Optimierte Threads'    // Abwärtskompatibilität
+};
+
 // Funktion zum Ausführen der Tests
 function runTest(endpoint) {
     // Test-Typ und Parameter bestimmen
@@ -114,6 +124,26 @@ function runTest(endpoint) {
     })
     .then(response => response.json())
     .then(data => {
+        // Normalisiere Thread-Modell-Namen für konsistente Darstellung
+        if (Array.isArray(data)) {
+            data = data.map(item => {
+                // Ersetze inkonsistente Thread-Modell-Namen
+                if (item.threadModel.includes("Kernel")) {
+                    item.threadModel = "Begrenzte Threads";
+                } else if (item.threadModel.includes("User")) {
+                    item.threadModel = "Optimierte Threads";
+                }
+                return item;
+            });
+        } else {
+            // Ersetze inkonsistente Thread-Modell-Namen
+            if (data.threadModel && data.threadModel.includes("Kernel")) {
+                data.threadModel = "Begrenzte Threads";
+            } else if (data.threadModel && data.threadModel.includes("User")) {
+                data.threadModel = "Optimierte Threads";
+            }
+        }
+        
         updateResultCard(resultId, data);
         
         // Füge Ergebnisse für Diagramm hinzu
@@ -138,29 +168,23 @@ function runTest(endpoint) {
 
 // Erstellt eine Ergebniskarte mit Ladeanzeige
 function createResultCard(id, endpoint, requestData) {
-    let title = "";
+    let title = threadModelLabels[endpoint] || "Vergleich aller Thread-Modelle";
     let cardClass = "";
     
     switch(endpoint) {
         case 'platform-threads':
-            title = "Platform Threads";
             cardClass = "thread-model-platform";
             break;
         case 'virtual-threads':
-            title = "Virtual Threads";
             cardClass = "thread-model-virtual";
             break;
         case 'limited-threads':
-            title = "Begrenzte Threads";
+        case 'kernel-threads':  // Abwärtskompatibilität
             cardClass = "thread-model-limited";
             break;
         case 'optimized-threads':
-            title = "Optimierte Threads";
+        case 'user-threads':    // Abwärtskompatibilität
             cardClass = "thread-model-optimized";
-            break;
-        case 'compare-all':
-            title = "Vergleich aller Thread-Modelle";
-            cardClass = "";
             break;
     }
     
@@ -301,6 +325,8 @@ function updateCharts() {
             }]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true,
@@ -311,6 +337,9 @@ function updateCharts() {
                 }
             },
             plugins: {
+                legend: {
+                    display: false
+                },
                 title: {
                     display: true,
                     text: 'Gesamtausführungszeit'
@@ -336,6 +365,8 @@ function updateCharts() {
             }]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true,
@@ -346,6 +377,9 @@ function updateCharts() {
                 }
             },
             plugins: {
+                legend: {
+                    display: false
+                },
                 title: {
                     display: true,
                     text: 'Durchsatz (Aufgaben pro Sekunde)'
@@ -371,6 +405,8 @@ function updateCharts() {
             }]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true,
@@ -381,6 +417,9 @@ function updateCharts() {
                 }
             },
             plugins: {
+                legend: {
+                    display: false
+                },
                 title: {
                     display: true,
                     text: 'Speicherverbrauch während Test'
