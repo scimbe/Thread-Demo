@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Dieses Projekt demonstriert die Unterschiede zwischen verschiedenen Thread-Implementierungen bei der Verarbeitung von REST-Anfragen in Java. Es zeigt die Performanceunterschiede und Eigenschaften von Platform Threads, Virtual Threads, Kernel Threads und User Threads anhand einer rechenintensiven Matrix-Multiplikation.
+Dieses Projekt demonstriert die Unterschiede zwischen verschiedenen Thread-Implementierungen bei der Verarbeitung von REST-Anfragen in Java. Es zeigt die Performanceunterschiede und Eigenschaften von Platform Threads, Virtual Threads, Kernel Threads und User Threads (Falls unterstützt, sonst nach besten Wissen simuliert) anhand einer rechenintensiven Matrix-Multiplikation.
 
 ## Java-Kompatibilität
 
