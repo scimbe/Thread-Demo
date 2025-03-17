@@ -1,7 +1,9 @@
 package de.haw.hamburg.threaddemo.controller;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,20 +41,23 @@ public class ThreadInfoController {
         // Aktuelle Thread-Details
         long[] threadIds = threadMXBean.getAllThreadIds();
         ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadIds, 3);
-        info.setThreadDetails(
-            Arrays.stream(threadInfos)
-                .filter(t -> t != null)
-                .map(t -> new ThreadDetail(
-                    t.getThreadId(),
-                    t.getThreadName(),
-                    t.getThreadState().name(),
-                    t.getThreadState() == Thread.State.WAITING || 
-                    t.getThreadState() == Thread.State.TIMED_WAITING || 
-                    t.getThreadState() == Thread.State.BLOCKED,
-                    getThreadGroupName(t.getThreadName())
-                ))
-                .collect(Collectors.toList())
-        );
+        
+        List<ThreadDetail> threadDetails = new ArrayList<>();
+        for (ThreadInfo t : threadInfos) {
+            if (t != null) {
+                ThreadDetail detail = new ThreadDetail();
+                detail.setId(t.getThreadId());
+                detail.setName(t.getThreadName());
+                detail.setState(t.getThreadState().name());
+                detail.setBlocked(t.getThreadState() == Thread.State.WAITING || 
+                               t.getThreadState() == Thread.State.TIMED_WAITING || 
+                               t.getThreadState() == Thread.State.BLOCKED);
+                detail.setThreadGroup(getThreadGroupName(t.getThreadName()));
+                threadDetails.add(detail);
+            }
+        }
+        
+        info.setThreadDetails(threadDetails);
         
         // Thread-Gruppen-Statistik
         info.setThreadGroupStats(
@@ -102,6 +107,55 @@ public class ThreadInfoController {
         private int daemonThreadCount;
         private List<ThreadDetail> threadDetails = new ArrayList<>();
         private java.util.Map<String, Long> threadGroupStats;
+        
+        // Explizite Getter und Setter für den Fall, dass Lombok nicht funktioniert
+        public long getTotalStartedThreadCount() {
+            return totalStartedThreadCount;
+        }
+        
+        public void setTotalStartedThreadCount(long totalStartedThreadCount) {
+            this.totalStartedThreadCount = totalStartedThreadCount;
+        }
+        
+        public int getCurrentThreadCount() {
+            return currentThreadCount;
+        }
+        
+        public void setCurrentThreadCount(int currentThreadCount) {
+            this.currentThreadCount = currentThreadCount;
+        }
+        
+        public int getPeakThreadCount() {
+            return peakThreadCount;
+        }
+        
+        public void setPeakThreadCount(int peakThreadCount) {
+            this.peakThreadCount = peakThreadCount;
+        }
+        
+        public int getDaemonThreadCount() {
+            return daemonThreadCount;
+        }
+        
+        public void setDaemonThreadCount(int daemonThreadCount) {
+            this.daemonThreadCount = daemonThreadCount;
+        }
+        
+        public List<ThreadDetail> getThreadDetails() {
+            return threadDetails;
+        }
+        
+        public void setThreadDetails(List<ThreadDetail> threadDetails) {
+            this.threadDetails = threadDetails;
+        }
+        
+        public java.util.Map<String, Long> getThreadGroupStats() {
+            return threadGroupStats;
+        }
+        
+        public void setThreadGroupStats(java.util.Map<String, Long> threadGroupStats) {
+            this.threadGroupStats = threadGroupStats;
+        }
     }
     
     /**
@@ -109,10 +163,52 @@ public class ThreadInfoController {
      */
     @Data
     public static class ThreadDetail {
-        private final long id;
-        private final String name;
-        private final String state;
-        private final boolean blocked;
-        private final String threadGroup;
+        private long id;
+        private String name;
+        private String state;
+        private boolean blocked;
+        private String threadGroup;
+        
+        // Explizite Getter für den Fall, dass Lombok nicht funktioniert
+        public long getId() {
+            return id;
+        }
+        
+        public String getName() {
+            return name;
+        }
+        
+        public String getState() {
+            return state;
+        }
+        
+        public boolean isBlocked() {
+            return blocked;
+        }
+        
+        public String getThreadGroup() {
+            return threadGroup;
+        }
+        
+        // Explizite Setter für Lombok-Unabhängigkeit
+        public void setId(long id) {
+            this.id = id;
+        }
+        
+        public void setName(String name) {
+            this.name = name;
+        }
+        
+        public void setState(String state) {
+            this.state = state;
+        }
+        
+        public void setBlocked(boolean blocked) {
+            this.blocked = blocked;
+        }
+        
+        public void setThreadGroup(String threadGroup) {
+            this.threadGroup = threadGroup;
+        }
     }
 }

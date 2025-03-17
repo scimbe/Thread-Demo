@@ -1,6 +1,5 @@
 package de.haw.hamburg.threaddemo.controller;
 
-
 import de.haw.hamburg.threaddemo.service.MatrixCalculationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +11,15 @@ import org.springframework.web.bind.annotation.RestController;
  * Controller zur Verwaltung der System-Auslastung
  */
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/system")
 public class SystemLoadController {
-    @Autowired
+    
     private final MatrixCalculationService calculationService;
+    
+    @Autowired
+    public SystemLoadController(MatrixCalculationService calculationService) {
+        this.calculationService = calculationService;
+    }
 
     /**
      * Aktiviert zusätzliche Belastung

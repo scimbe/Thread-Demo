@@ -1,6 +1,8 @@
 package de.haw.hamburg.threaddemo.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class MatrixCalculationService {
 
+    private static final Logger log = LoggerFactory.getLogger(MatrixCalculationService.class);
     private final Random random = new Random();
     private volatile boolean isHeavyLoadEnabled = false;
 

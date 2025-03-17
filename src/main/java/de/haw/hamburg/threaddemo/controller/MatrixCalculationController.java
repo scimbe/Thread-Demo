@@ -6,8 +6,9 @@ import de.haw.hamburg.threaddemo.service.IOIntensiveService;
 import de.haw.hamburg.threaddemo.service.MatrixCalculationService;
 import de.haw.hamburg.threaddemo.service.MemoryMonitorService;
 import de.haw.hamburg.threaddemo.service.MemoryMonitorService.MemorySnapshot;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -26,13 +27,22 @@ import java.util.concurrent.TimeUnit;
  */
 @RestController
 @RequestMapping("/api/matrix")
-@RequiredArgsConstructor
-@Slf4j
 public class MatrixCalculationController {
 
+    private static final Logger log = LoggerFactory.getLogger(MatrixCalculationController.class);
     private final MatrixCalculationService calculationService;
     private final IOIntensiveService ioService;
     private final MemoryMonitorService memoryMonitorService;
+    
+    @Autowired
+    public MatrixCalculationController(
+            MatrixCalculationService calculationService,
+            IOIntensiveService ioService,
+            MemoryMonitorService memoryMonitorService) {
+        this.calculationService = calculationService;
+        this.ioService = ioService;
+        this.memoryMonitorService = memoryMonitorService;
+    }
     
     /**
      * Führt Tests mit Standard Java Platform Threads durch

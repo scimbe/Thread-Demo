@@ -95,5 +95,38 @@ public class MemoryMonitorService {
         private double nonHeapMemoryUsageMB;
         private double totalMemoryUsageMB;
         private double peakMemoryUsageMB;
+        
+        // Explizite Getter und Setter für den Fall, dass Lombok nicht funktioniert
+        public double getHeapMemoryUsageMB() {
+            return heapMemoryUsageMB;
+        }
+        
+        public void setHeapMemoryUsageMB(double heapMemoryUsageMB) {
+            this.heapMemoryUsageMB = heapMemoryUsageMB;
+        }
+        
+        public double getNonHeapMemoryUsageMB() {
+            return nonHeapMemoryUsageMB;
+        }
+        
+        public void setNonHeapMemoryUsageMB(double nonHeapMemoryUsageMB) {
+            this.nonHeapMemoryUsageMB = nonHeapMemoryUsageMB;
+        }
+        
+        public double getTotalMemoryUsageMB() {
+            return totalMemoryUsageMB;
+        }
+        
+        public void setTotalMemoryUsageMB(double totalMemoryUsageMB) {
+            this.totalMemoryUsageMB = totalMemoryUsageMB;
+        }
+        
+        public double getPeakMemoryUsageMB() {
+            return peakMemoryUsageMB;
+        }
+        
+        public void setPeakMemoryUsageMB(Double peakMemoryUsageMB) {
+            this.peakMemoryUsageMB = peakMemoryUsageMB != null ? peakMemoryUsageMB : 0.0;
+        }
     }
 }
