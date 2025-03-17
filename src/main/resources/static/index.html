@@ -262,20 +262,7 @@
 
     <!-- JavaScript-Dateien -->
     <script src="js/infobox.js"></script>
+    <script src="js/infobox-loader.js"></script>
     <script src="js/benchmark.js"></script>
-    <script>
-        // InfoBox-Inhalt laden
-        fetch('infobox.html')
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('infoBoxContainer').innerHTML = data;
-                // Initialisierung der InfoBox-Funktionalität nach dem Laden des Inhalts
-                initializeInfoBox();
-            })
-            .catch(error => {
-                console.error('Error loading infobox:', error);
-                document.getElementById('infoBoxContainer').innerHTML = '<div class="alert alert-danger">Fehler beim Laden der Info-Box</div>';
-            });
-    </script>
 </body>
 </html>
