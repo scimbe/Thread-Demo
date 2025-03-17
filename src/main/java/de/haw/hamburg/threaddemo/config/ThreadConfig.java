@@ -85,6 +85,7 @@ public class ThreadConfig {
     private Executor createSimulatedVirtualThreadPool() {
         return Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r);
+            t.setDaemon(false);  // Nicht-Daemon-Threads für konsistenteres Verhalten
             t.setName("virtual-thread-" + t.getId());
             return t;
         });
@@ -106,8 +107,10 @@ public class ThreadConfig {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(coreCount);
         executor.setMaxPoolSize(coreCount);
-        executor.setQueueCapacity(500); // Größere Queue für Tasks
+        executor.setQueueCapacity(50);  // Kleinere Queue für realistischere Limitierung
         executor.setThreadNamePrefix("limited-thread-");
+        executor.setRejectedExecutionHandler((r, e) -> 
+            logger.warn("Task abgelehnt aufgrund von Ressourcenbeschränkung in begrenztem Thread-Pool"));
         executor.initialize();
         logger.info("Begrenzter Thread-Pool erstellt mit {} Threads", coreCount);
         return executor;
@@ -125,7 +128,7 @@ public class ThreadConfig {
      */
     @Bean(name = "optimizedThreadTaskExecutor")
     public Executor optimizedThreadTaskExecutor() {
-        int parallelism = Math.max(4, Runtime.getRuntime().availableProcessors() * 2);
+        int parallelism = Math.max(8, Runtime.getRuntime().availableProcessors() * 4);  // Höherer Parallelitätsgrad
         logger.info("Optimierter Thread-Pool erstellt mit Parallelitätsgrad {}", parallelism);
         return Executors.newWorkStealingPool(parallelism);
     }

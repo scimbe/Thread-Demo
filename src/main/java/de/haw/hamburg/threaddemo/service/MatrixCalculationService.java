@@ -3,11 +3,13 @@ package de.haw.hamburg.threaddemo.service;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Service-Klasse, die eine rechenintensive Matrix-Multiplikation durchführt
@@ -20,6 +22,24 @@ public class MatrixCalculationService {
     private static final Logger log = LoggerFactory.getLogger(MatrixCalculationService.class);
     private final Random random = new Random();
     private volatile boolean isHeavyLoadEnabled = false;
+    
+    // Injiziere die executor beans direkt für die CompletableFuture Implementierungen
+    private final Executor platformThreadTaskExecutor;
+    private final Executor virtualThreadTaskExecutor;
+    private final Executor limitedThreadTaskExecutor;
+    private final Executor optimizedThreadTaskExecutor;
+    
+    @Autowired
+    public MatrixCalculationService(
+            Executor platformThreadTaskExecutor,
+            Executor virtualThreadTaskExecutor,
+            Executor limitedThreadTaskExecutor,
+            Executor optimizedThreadTaskExecutor) {
+        this.platformThreadTaskExecutor = platformThreadTaskExecutor;
+        this.virtualThreadTaskExecutor = virtualThreadTaskExecutor;
+        this.limitedThreadTaskExecutor = limitedThreadTaskExecutor;
+        this.optimizedThreadTaskExecutor = optimizedThreadTaskExecutor;
+    }
 
     /**
      * Aktiviert oder deaktiviert die Zusatzbelastung
@@ -31,7 +51,7 @@ public class MatrixCalculationService {
     /**
      * Simuliert eine schwere Berechnungslast (z. B. Primzahlenberechnung)
      */
-    @Async("platformThreadTaskExecutor") // Kann auch andere Executoren verwenden
+    @Async("platformThreadTaskExecutor") 
     public void performHeavyLoadTask() {
         while (isHeavyLoadEnabled) {
             calculateHeavyTask();
@@ -116,35 +136,31 @@ public class MatrixCalculationService {
      * Asynchrone Matrix-Multiplikation mit Platform Threads
      * Verwendet 1:1-Mapping zu OS-Threads (Standard-Java-Threads)
      */
-    @Async("platformThreadTaskExecutor")
     public CompletableFuture<double[][]> multiplyMatricesWithPlatformThreads(double[][] matrixA, double[][] matrixB) {
-        return CompletableFuture.completedFuture(multiplyMatrices(matrixA, matrixB));
+        return CompletableFuture.supplyAsync(() -> multiplyMatrices(matrixA, matrixB), platformThreadTaskExecutor);
     }
     
     /**
      * Asynchrone Matrix-Multiplikation mit Virtual Threads
      * Verwendet leichtgewichtige JVM-Threads (echte in Java 21+, simuliert in älteren Versionen)
      */
-    @Async("virtualThreadTaskExecutor")
     public CompletableFuture<double[][]> multiplyMatricesWithVirtualThreads(double[][] matrixA, double[][] matrixB) {
-        return CompletableFuture.completedFuture(multiplyMatrices(matrixA, matrixB));
+        return CompletableFuture.supplyAsync(() -> multiplyMatrices(matrixA, matrixB), virtualThreadTaskExecutor);
     }
     
     /**
      * Asynchrone Matrix-Multiplikation mit begrenztem Thread-Pool
      * Simuliert ressourcenbegrenzte Umgebung, ähnlich zu OS-Kernel-Thread-Limitierungen
      */
-    @Async("limitedThreadTaskExecutor")
     public CompletableFuture<double[][]> multiplyMatricesWithLimitedThreads(double[][] matrixA, double[][] matrixB) {
-        return CompletableFuture.completedFuture(multiplyMatrices(matrixA, matrixB));
+        return CompletableFuture.supplyAsync(() -> multiplyMatrices(matrixA, matrixB), limitedThreadTaskExecutor);
     }
     
     /**
      * Asynchrone Matrix-Multiplikation mit optimiertem Work-Stealing-Pool
      * Verwendet optimiertes Scheduling für eine bessere Lastverteilung
      */
-    @Async("optimizedThreadTaskExecutor")
     public CompletableFuture<double[][]> multiplyMatricesWithOptimizedThreads(double[][] matrixA, double[][] matrixB) {
-        return CompletableFuture.completedFuture(multiplyMatrices(matrixA, matrixB));
+        return CompletableFuture.supplyAsync(() -> multiplyMatrices(matrixA, matrixB), optimizedThreadTaskExecutor);
     }
 }

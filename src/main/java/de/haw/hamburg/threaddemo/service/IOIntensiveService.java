@@ -3,6 +3,7 @@ package de.haw.hamburg.threaddemo.service;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Service-Klasse, die I/O-intensive Operationen durchführt
@@ -39,6 +41,24 @@ public class IOIntensiveService {
     @Value("${io.test.temp.dir:./io-test-temp}")
     private String tempDirPath;
     
+    // Injiziere die executor beans direkt für die CompletableFuture Implementierungen
+    private final Executor platformThreadTaskExecutor;
+    private final Executor virtualThreadTaskExecutor;
+    private final Executor limitedThreadTaskExecutor;
+    private final Executor optimizedThreadTaskExecutor;
+    
+    @Autowired
+    public IOIntensiveService(
+            Executor platformThreadTaskExecutor,
+            Executor virtualThreadTaskExecutor,
+            Executor limitedThreadTaskExecutor,
+            Executor optimizedThreadTaskExecutor) {
+        this.platformThreadTaskExecutor = platformThreadTaskExecutor;
+        this.virtualThreadTaskExecutor = virtualThreadTaskExecutor;
+        this.limitedThreadTaskExecutor = limitedThreadTaskExecutor;
+        this.optimizedThreadTaskExecutor = optimizedThreadTaskExecutor;
+    }
+    
     /**
      * Simuliert eine Reihe von HTTP-Anfragen, die typischerweise I/O-blockierend sind
      * Verwendet einen simulierten Delay, um nicht von externen Diensten abhängig zu sein
@@ -54,7 +74,7 @@ public class IOIntensiveService {
         for (int i = 0; i < numberOfRequests; i++) {
             try {
                 // Simuliere Netzwerk-Latenz statt echte HTTP-Anfragen zu machen
-                Thread.sleep(200); // 200ms simulierte Netzwerklatenz
+                Thread.sleep(300); // 300ms simulierte Netzwerklatenz (erhöht für bessere Unterschiede)
                 String result = "HTTP Response #" + i + " - Thread: " + Thread.currentThread().getName();
                 results.add(result);
             } catch (Exception e) {
@@ -106,12 +126,18 @@ public class IOIntensiveService {
                 Files.write(filePath, data, StandardOpenOption.CREATE);
                 filePaths.add(filePath);
                 
+                // Simuliere zusätzliche I/O-Latenz für deutlichere Unterschiede
+                Thread.sleep(100);
+                
                 // Lese die Datei wieder ein
                 byte[] readData = Files.readAllBytes(filePath);
                 
+                // Simuliere Verarbeitung
+                Thread.sleep(50);
+                
                 // Lösche die temporäre Datei
                 Files.delete(filePath);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error("Fehler bei Dateioperationen: {}", e.getMessage());
             }
         }
@@ -126,17 +152,18 @@ public class IOIntensiveService {
     /**
      * Führt einen gemischten I/O-Test durch, der sowohl Netzwerk- als auch Dateizugriffe enthält
      */
-    public CompletableFuture<Void> performMixedIOTest(int operations, int fileSizeKB) {
+    public void performMixedIOTest(int operations, int fileSizeKB) {
         int httpRequests = operations / 2;
         int fileOperations = operations / 2;
         
         log.info("Starte gemischten I/O-Test mit {} HTTP-Anfragen und {} Dateioperationen", 
                 httpRequests, fileOperations);
         
-        return CompletableFuture.runAsync(() -> {
-            performHttpRequests(httpRequests);
-            performFileOperations(fileOperations, fileSizeKB);
-        });
+        // Führe synchron im aktuellen Thread aus (der bereits im jeweiligen ThreadPool läuft)
+        performHttpRequests(httpRequests);
+        performFileOperations(fileOperations, fileSizeKB);
+        
+        log.info("Gemischter I/O-Test abgeschlossen auf Thread: {}", Thread.currentThread().getName());
     }
     
     /**
@@ -144,9 +171,8 @@ public class IOIntensiveService {
      * - Verwendet 1:1-Mapping zu OS-Threads (Standard-Java-Threads)
      * - Threads bleiben während blockierender I/O-Operationen aktiv
      */
-    @Async("platformThreadTaskExecutor")
     public CompletableFuture<Void> performMixedIOTestWithPlatformThreads(int operations, int fileSizeKB) {
-        return performMixedIOTest(operations, fileSizeKB);
+        return CompletableFuture.runAsync(() -> performMixedIOTest(operations, fileSizeKB), platformThreadTaskExecutor);
     }
     
     /**
@@ -155,9 +181,8 @@ public class IOIntensiveService {
      * - Echte in Java 21+, simuliert in älteren Versionen
      * - Beim Blockieren werden die Threads effizient pausiert
      */
-    @Async("virtualThreadTaskExecutor")
     public CompletableFuture<Void> performMixedIOTestWithVirtualThreads(int operations, int fileSizeKB) {
-        return performMixedIOTest(operations, fileSizeKB);
+        return CompletableFuture.runAsync(() -> performMixedIOTest(operations, fileSizeKB), virtualThreadTaskExecutor);
     }
     
     /**
@@ -165,9 +190,8 @@ public class IOIntensiveService {
      * - Simuliert ressourcenbegrenzte Umgebung
      * - Zeigt Verhalten bei begrenzter Thread-Anzahl
      */
-    @Async("limitedThreadTaskExecutor")
     public CompletableFuture<Void> performMixedIOTestWithLimitedThreads(int operations, int fileSizeKB) {
-        return performMixedIOTest(operations, fileSizeKB);
+        return CompletableFuture.runAsync(() -> performMixedIOTest(operations, fileSizeKB), limitedThreadTaskExecutor);
     }
     
     /**
@@ -175,8 +199,7 @@ public class IOIntensiveService {
      * - Verwendet optimiertes Scheduling für eine bessere Lastverteilung
      * - Threads können Arbeit von überlasteten Threads "stehlen"
      */
-    @Async("optimizedThreadTaskExecutor")
     public CompletableFuture<Void> performMixedIOTestWithOptimizedThreads(int operations, int fileSizeKB) {
-        return performMixedIOTest(operations, fileSizeKB);
+        return CompletableFuture.runAsync(() -> performMixedIOTest(operations, fileSizeKB), optimizedThreadTaskExecutor);
     }
 }
